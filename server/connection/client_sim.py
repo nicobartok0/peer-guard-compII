@@ -1,16 +1,20 @@
 import asyncio
+import json
 
 async def client():
     reader, writer = await asyncio.open_connection("127.0.0.1", 5000)
 
+    mensaje = {
+    "report_type": "ROBO/HURTO",
+    "datetime": "2026-04-19 20:00:00",
+    "lat": 55.0,
+    "long": 55.0,
+    "detail": "Robo en chacabuco"
+
+    }  
+    
     print("Enviando mensaje...")
-    writer.write(b"Hola servidor")
+    writer.write(json.dumps(mensaje).encode("utf-8"))
     await writer.drain()
-
-    data = await reader.read(1024)
-    print("Respuesta del servidor:", data.decode())
-
-    writer.close()
-    await writer.wait_closed()
 
 asyncio.run(client())

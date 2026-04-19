@@ -6,6 +6,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 import json
+from server.factory.report_factory import ReportFactory
+from server.validator.validator import Validator
 
 class ConnectionManager:
     def __init__(self, input_queue, output_queue):
@@ -18,31 +20,50 @@ class ConnectionManager:
         # el cliente (Recibirá por REDIS)
         self.output_queue = output_queue
 
-
+        # Creo un SET de clientes
         self.clients = set()
 
+    # Función asíncrona de manejo de clientes para cada cliente
     async def handle_client(self, reader, writer):
+        # añado el writer del cliente actual al set
         self.clients.add(writer)
+        print("Cliente añadido")
+
         try:
             while True:
+                # Leo la información hasta el código de escape
+                # ACÁ hay un error
+                print("Leyendo información...")
                 data = await reader.readuntil(b"\n")
                 message_str = data.decode().strip()
 
                 try:
+                    # Intento cargar el JSON del mensaje
                     message_json = json.loads(message_str)
+                    print("Mensaje cargado.")
                 except json.JSONDecodeError:
                     print("JSON Inválido:", message_str)
                     continue
 
                 print("Recibido JSON: ", message_json)
 
-                await self.input_queue.put((writer, message_json))
+                # Ingreso el JSON a la cola del receptor
+                await self.input_queue.put(
+                    (writer, 
+                     ReportFactory.create(
+                        Validator.validate(message_json)
+                        )
+                    )
+                )
+                # DEBUG: Sacar más adelante. Imprime si el objeto llega a estar en la QUEUE
+                print(list(self.input_queue._queue))
         except asyncio.IncompleteReadError:
             pass
         finally:
             self.clients.remove(writer)
             writer.close()
             await writer.wait_closed()
+            print("Cerrando...")
 
     async def open(self):
         print(os.getenv("SERVER_IP"))
@@ -60,5 +81,8 @@ class ConnectionManager:
         asyncio.run(self.open())
 
 if __name__ == "__main__":
-    test_conn = ConnectionManager()
+    input_queue = asyncio.Queue()
+    output_queue = asyncio.Queue()
+    
+    test_conn = ConnectionManager(input_queue, output_queue)
     test_conn.run()
