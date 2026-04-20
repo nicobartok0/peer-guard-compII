@@ -14,7 +14,7 @@ async def client():
     }  
     
     print("Enviando mensaje...")
-    writer.write(json.dumps(mensaje).encode("utf-8"))
+    writer.write(json.dumps(mensaje).encode("utf-8") + b"\n")
     await writer.drain()
 
 asyncio.run(client())

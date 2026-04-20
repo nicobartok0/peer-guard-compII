@@ -36,6 +36,7 @@ class ConnectionManager:
                 print("Leyendo información...")
                 data = await reader.readuntil(b"\n")
                 message_str = data.decode().strip()
+                print("MEnsaje: ",      message_str)
 
                 try:
                     # Intento cargar el JSON del mensaje
@@ -48,16 +49,18 @@ class ConnectionManager:
                 print("Recibido JSON: ", message_json)
 
                 # Ingreso el JSON a la cola del receptor
+                print(type(message_json))
                 await self.input_queue.put(
                     (writer, 
                      ReportFactory.create(
-                        Validator.validate(message_json)
+                        Validator.validate(message_json)[1]
                         )
                     )
                 )
                 # DEBUG: Sacar más adelante. Imprime si el objeto llega a estar en la QUEUE
                 print(list(self.input_queue._queue))
         except asyncio.IncompleteReadError:
+            print("Lectura finalizada (Incomplete Read)")
             pass
         finally:
             self.clients.remove(writer)

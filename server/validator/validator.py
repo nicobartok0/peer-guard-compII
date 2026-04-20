@@ -56,7 +56,7 @@ class Validator:
         
         if not (len(message_json["detail"]) < 300):
             return False, "Detalle muy largo."
-        
+        print(type(message_json))
         return True, message_json
         
         
