@@ -10,15 +10,15 @@ from server.factory.report_factory import ReportFactory
 from server.validator.validator import Validator
 
 class ConnectionManager:
-    def __init__(self, input_queue, output_queue):
+    def __init__(self):
         load_dotenv()
         # Creo la cola entre el CONNECTION MANAGER y
         # los worker de ENRIQUECIMIENTO
-        self.input_queue = input_queue
+        self.input_queue = asyncio.Queue()
 
         # Creo la cola entre el CONNECTION MANAGER y
         # el cliente (Recibirá por REDIS)
-        self.output_queue = output_queue
+        self.output_queue = asyncio.Queue()
 
         # Creo un SET de clientes
         self.clients = set()
@@ -84,8 +84,8 @@ class ConnectionManager:
         asyncio.run(self.open())
 
 if __name__ == "__main__":
-    input_queue = asyncio.Queue()
-    output_queue = asyncio.Queue()
+    #input_queue = asyncio.Queue()
+    #output_queue = asyncio.Queue()
     
-    test_conn = ConnectionManager(input_queue, output_queue)
+    test_conn = ConnectionManager()
     test_conn.run()
