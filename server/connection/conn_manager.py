@@ -8,10 +8,12 @@ from dotenv import load_dotenv
 import json
 from server.factory.report_factory import ReportFactory
 from server.validator.validator import Validator
+from pathlib import Path
 
 class ConnectionManager:
     def __init__(self):
-        load_dotenv()
+        print(Path(__file__).resolve().parent.parent.parent)
+        load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
         # Creo la cola entre el CONNECTION MANAGER y
         # los worker de ENRIQUECIMIENTO
         self.input_queue = asyncio.Queue()

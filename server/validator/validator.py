@@ -6,8 +6,11 @@ class Validator:
 # ESTRUCTURA A VALIDAR:
 # message_json = {
 #   report_type = (ROBO/HURTO, ROBO VEHÍCULO, ASESINATO, SINIESTRO VIAL),
-#   datetime = (fecha en formato YYYY-MM-DD HH:MM:SS. El
-#   factory lo convertirá en día y hora).
+
+#   datetime = (fecha en formato YYYY-MM-DD HH:MM:SS. El validador lo
+#   convertirá en datetime y el
+#   enriquecedor lo convertirá en día y hora).
+
 #   lat = (Latitud en GRADOS DECIMALES: (de -90 a 90))
 #   long = (Longitud en GRADOS DECIMALES: (de -180 a 180))
 #   detail = (Descripción entre 0 y 300 carácteres.)
@@ -56,7 +59,7 @@ class Validator:
         
         if not (len(message_json["detail"]) < 300):
             return False, "Detalle muy largo."
-        print(type(message_json))
+        
         return True, message_json
         
         
