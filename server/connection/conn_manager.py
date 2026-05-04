@@ -53,11 +53,7 @@ class ConnectionManager:
                 # Ingreso el JSON a la cola del receptor
                 print(type(message_json))
                 await self.input_queue.put(
-                    (writer, 
-                     ReportFactory.create(
-                        Validator.validate(message_json)[1]
-                        )
-                    )
+                    (writer, Validator.validate(message_json)[1])
                 )
                 # DEBUG: Sacar más adelante. Imprime si el objeto llega a estar en la QUEUE
                 print(list(self.input_queue._queue))
