@@ -1,5 +1,7 @@
 import re
 from datetime import datetime
+from pathlib import Path
+import json
 
 class Validator:
 
@@ -24,12 +26,21 @@ class Validator:
         "long" : 0.0,
         "detail" : ""
     }
-    VALID_TYPES = [
-        "ROBO/HURTO",
-        "ROBO VEHÍCULO",
-        "ASESINATO",
-        "SINIESTRO VIAL"
-    ]
+    #VALID_TYPES = [
+    #    "ROBO/HURTO",
+    #    "ROBO VEHÍCULO",
+    #    "ASESINATO",
+    #    "SINIESTRO VIAL"
+    #]
+    # Cargamos el archivo types_severity.json
+    _TYPES_FILE = Path(__file__).resolve().parent / "types_severity.json"
+
+    # Guardamos los datos de types_severity: Los crímenes y su nivel de severidad
+    with open(_TYPES_FILE, "r", encoding="utf-8") as f:
+        _CRIME_TYPES = json.load(f)
+
+    # Hacemos una lista de tipos de crímen válidos (keys de CRIME_TYPES)
+    VALID_TYPES = list(_CRIME_TYPES.keys())
     DATE_FORMAT = r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$"
 
     @staticmethod
@@ -51,10 +62,10 @@ class Validator:
         except ValueError:
             return False, "Fecha con valores no válidos."
         
-        if not (message_json["lat"] > -90) or not (message_json["lat"] < 90):
+        if not (message_json["lat"] >= -90) or not (message_json["lat"] <= 90):
             return False, "Rango de latitud inválido"  
         
-        if not (message_json["long"] > -180) or not (message_json["lat"] < 180):
+        if not (message_json["long"] >= -180) or not (message_json["long"] <= 180):
             return False, "Rango de longitud inválido"  
         
         if not (len(message_json["detail"]) < 300):
