@@ -52,3 +52,6 @@ celery_app.conf.update(
 )
 
 celery_app.autodiscover_tasks(["server"])
+
+# Importe EXPLÍCITO de las tasks para que celery las detecte
+from server.tasks import enrichment, persistence

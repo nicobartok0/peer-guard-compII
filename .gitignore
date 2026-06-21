@@ -1,1 +1,22 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Variables de entorno (credenciales, configuración local)
 .env
+
+# Python compilado
+__pycache__/
+*.pyc
+*.pyo
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
