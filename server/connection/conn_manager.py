@@ -1,80 +1,66 @@
 # El objeto de este módulo será encargado de manejar las
 # conexiones utilizando socket.
 # Esto es tanto para las consultas HACIA la db como DESDE la db.
-
 import asyncio
 import os
 from dotenv import load_dotenv
 import json
-from server.factory.report_factory import ReportFactory
 from server.validator.validator import Validator
+from server.tasks.enrichment import enriquecer
 from pathlib import Path
 
 class ConnectionManager:
     def __init__(self):
-        print(Path(__file__).resolve().parent.parent.parent)
         load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
-        # Creo la cola entre el CONNECTION MANAGER y
-        # los worker de ENRIQUECIMIENTO
-        self.input_queue = asyncio.Queue()
 
-        # Creo la cola entre el CONNECTION MANAGER y
-        # el cliente (Recibirá por REDIS)
+        # Cola entre el CONNECTION MANAGER y el cliente
+        # (heatmap / broadcast, vía Redis)
         self.output_queue = asyncio.Queue()
 
-        # Creo un SET de clientes
+        # Set de clientes
         self.clients = set()
 
-    # Función asíncrona de manejo de clientes para cada cliente
     async def handle_client(self, reader, writer):
-        # añado el writer del cliente actual al set
         self.clients.add(writer)
         print("Cliente añadido")
 
         try:
             while True:
-                # Leo la información hasta el código de escape
-                # ACÁ hay un error
-                print("Leyendo información...")
                 data = await reader.readuntil(b"\n")
                 message_str = data.decode().strip()
-                print("MEnsaje: ",      message_str)
 
                 try:
-                    # Intento cargar el JSON del mensaje
                     message_json = json.loads(message_str)
-                    print("Mensaje cargado.")
                 except json.JSONDecodeError:
-                    print("JSON Inválido:", message_str)
+                    await self._responder(writer, False, "JSON inválido")
                     continue
 
-                print("Recibido JSON: ", message_json)
+                ok, resultado = Validator.validate(message_json)
 
-                # Ingreso el JSON a la cola del receptor
-                print(type(message_json))
-                await self.input_queue.put(
-                    (writer, Validator.validate(message_json)[1])
-                )
-                # DEBUG: Sacar más adelante. Imprime si el objeto llega a estar en la QUEUE
-                print(list(self.input_queue._queue))
+                if ok:
+                    enriquecer.delay(resultado)
+                    await self._responder(writer, True, "Reporte recibido")
+                else:
+                    await self._responder(writer, False, resultado)
+
         except asyncio.IncompleteReadError:
             print("Lectura finalizada (Incomplete Read)")
-            pass
         finally:
             self.clients.remove(writer)
             writer.close()
             await writer.wait_closed()
             print("Cerrando...")
 
+    async def _responder(self, writer, ok: bool, mensaje: str):
+        respuesta = json.dumps({"ok": ok, "mensaje": mensaje}) + "\n"
+        writer.write(respuesta.encode())
+        await writer.drain()
+
     async def open(self):
-        print(os.getenv("SERVER_IP"))
-        
         server = await asyncio.start_server(
-        self.handle_client, str(os.getenv("SERVER_IP")), int(os.getenv("SERVER_PORT"))
+            self.handle_client, str(os.getenv("SERVER_IP")), int(os.getenv("SERVER_PORT"))
         )
-        
         print("Servidor async escuchando...")
-        
         async with server:
             await server.serve_forever()
 
@@ -82,8 +68,5 @@ class ConnectionManager:
         asyncio.run(self.open())
 
 if __name__ == "__main__":
-    #input_queue = asyncio.Queue()
-    #output_queue = asyncio.Queue()
-    
     test_conn = ConnectionManager()
     test_conn.run()

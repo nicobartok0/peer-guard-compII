@@ -3,7 +3,6 @@ version: "3.9"
 services:
   redis:
     image: redis:7-alpine
-    container_name: redis_broker
     ports:
       - "${REDIS_PORT}:6379"
     restart: unless-stopped
