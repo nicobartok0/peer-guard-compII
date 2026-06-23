@@ -14,9 +14,9 @@ async def client():
     mensaje = {
         "report_type": "ROBO/HURTO",
         "datetime": "2026-04-19 20:00:00",
-        "lat": -32.889478119247,
-        "long": -68.844776140965,
-        "detail": "Robo en chacabuco"
+        "lat": -32.8908,
+        "long": -68.8272,
+        "detail": "Robo en mza"
     }
 
     print("Enviando mensaje...")

@@ -5,6 +5,7 @@ class WeatherEnricher(BaseEnricher):
     def enrich(self, reporte: dict) -> dict:
         try:
             fecha = reporte["datetime"].split(" ")[0]
+            hora = reporte["hora"]
             url = "https://archive-api.open-meteo.com/v1/archive"
             params = {
                 "latitude": reporte["lat"], "longitude": reporte["long"],
@@ -12,7 +13,10 @@ class WeatherEnricher(BaseEnricher):
                 "hourly": "temperature_2m,precipitation"
             }
             resp = requests.get(url, params=params, timeout=5)
-            reporte["clima"] = resp.json().get("hourly")
-        except requests.RequestException:
-            reporte["clima"] = None
+            hourly = resp.json().get("hourly", {})
+            reporte["temperatura"] = hourly.get("temperature_2m", [])[hora]
+            reporte["precipitacion"] = hourly.get("precipitation", [])[hora]
+        except (requests.RequestException, IndexError, TypeError):
+            reporte["temperatura"] = None
+            reporte["precipitacion"] = None
         return reporte
