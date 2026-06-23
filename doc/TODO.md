@@ -5,20 +5,20 @@
 ### ~~Crear connection manager~~
 ### ~~Crear validador~~
 ### ~~Crear report y report factory~~
-### Crear output del connection manager
+### ~~Crear output del connection manager~~
 
 ## CREACIÓN DEL POOL DE ENRIQUECIMIENTO
 
-### Crear pool con Celery para procesamiento paralelo
+### ~~Crear pool con Celery para procesamiento paralelo~~
 ### CUIDADO con la Queue: Aplicar lock para concurrencia segura
-### Añadir funcionalidad de enriquecimiento (dia, hora, fecha, cuadrícula correspondiente, peligrosidad, momento del día)
-### Crear objeto RichReport y Factory del mismo. 
+### ~~Añadir funcionalidad de enriquecimiento (dia, hora, fecha, cuadrícula correspondiente, peligrosidad, momento del día)~~
+### ~~Crear objeto RichReport y Factory del mismo.~~ 
 
 ## CREACIÓN DEL POOL DE PERSISTENCIA
 
-### Crear pool de persistencia con la misma lógica que el pool de enriquecimiento
+### ~~Crear pool de persistencia con la misma lógica que el pool de enriquecimiento~~
 ### Implementar Lock en la Queue.
-### Implementar funcionalidad de guardado en base de datos y patrón repository para los workers.
+### ~~Implementar funcionalidad de guardado en base de datos y patrón repository para los workers.~~
 
 ## BASE DE DATOS
 
