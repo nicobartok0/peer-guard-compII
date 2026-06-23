@@ -20,3 +20,6 @@ celerybeat.pid
 
 # Logs
 *.log
+
+# Misceláneos
+psql-comms
