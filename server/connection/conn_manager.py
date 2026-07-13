@@ -1,6 +1,3 @@
-# El objeto de este módulo será encargado de manejar las
-# conexiones utilizando socket.
-# Esto es tanto para las consultas HACIA la db como DESDE la db.
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -13,8 +10,7 @@ class ConnectionManager:
     def __init__(self):
         load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-        # Cola entre el CONNECTION MANAGER y el cliente
-        # (heatmap / broadcast, vía Redis)
+        
         self.output_queue = asyncio.Queue()
 
         # Set de clientes
@@ -22,7 +18,8 @@ class ConnectionManager:
 
     async def handle_client(self, reader, writer):
         self.clients.add(writer)
-        print("Cliente añadido")
+        peer = writer.get_extra_info("peername")
+        print(f"Cliente añadido: {peer}")
 
         try:
             while True:
@@ -44,25 +41,50 @@ class ConnectionManager:
                     await self._responder(writer, False, resultado)
 
         except asyncio.IncompleteReadError:
-            print("Lectura finalizada (Incomplete Read)")
+            print(f"Lectura finalizada (Incomplete Read): {peer}")
         finally:
-            self.clients.remove(writer)
+            self.clients.discard(writer)
             writer.close()
             await writer.wait_closed()
-            print("Cerrando...")
+            print(f"Cerrando conexión: {peer}")
 
     async def _responder(self, writer, ok: bool, mensaje: str):
         respuesta = json.dumps({"ok": ok, "mensaje": mensaje}) + "\n"
         writer.write(respuesta.encode())
         await writer.drain()
 
+    async def _crear_servidor(self, host: str, port: int):
+        """Intenta levantar un servidor en el host dado. Devuelve None si falla."""
+        try:
+            server = await asyncio.start_server(self.handle_client, host, port)
+            print(f"Escuchando en {host}:{port}")
+            return server
+        except OSError as e:
+            print(f"No se pudo abrir socket en {host}:{port}: {e}")
+            return None
+
     async def open(self):
-        server = await asyncio.start_server(
-            self.handle_client, str(os.getenv("SERVER_IP")), int(os.getenv("SERVER_PORT"))
-        )
-        print("Servidor async escuchando...")
-        async with server:
-            await server.serve_forever()
+        port = int(os.getenv("SERVER_PORT"))
+
+        # Levantamos un servidor por cada familia de direcciones.
+        
+        servidores = [
+            await self._crear_servidor("0.0.0.0", port),  # IPv4
+            await self._crear_servidor("::",      port),  # IPv6
+        ]
+
+        # Filtramos los que fallaron
+        servidores_activos = [s for s in servidores if s is not None]
+
+        if not servidores_activos:
+            print("No se pudo abrir ningún socket. Abortando.")
+            return
+
+        print(f"Servidor async escuchando en {len(servidores_activos)} interfaz/ces...")
+
+        async with asyncio.TaskGroup() as tg:
+            for servidor in servidores_activos:
+                tg.create_task(servidor.serve_forever())
 
     def run(self):
         asyncio.run(self.open())
