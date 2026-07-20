@@ -93,6 +93,7 @@ fi
 # ---------------------------------------------------------
 CMD_CONN_MANAGER="cd '$PROJECT_ROOT' && source '$PROJECT_ROOT/venv/bin/activate' && python3 -m server.connection.conn_manager"
 CMD_WORKER="cd '$PROJECT_ROOT' && source '$PROJECT_ROOT/venv/bin/activate' && celery -A server.celery.celery_app worker -Q enriquecimiento,persistencia,estadistica --loglevel=info"
+CMD_BEAT="cd '$PROJECT_ROOT' && source '$PROJECT_ROOT/venv/bin/activate' && celery -A server.celery.celery_app beat --loglevel=info"
 
 abrir_terminal() {
     local titulo="$1"
@@ -136,6 +137,7 @@ abrir_terminal() {
 
 abrir_terminal "conn_manager" "$CMD_CONN_MANAGER"
 abrir_terminal "celery_worker" "$CMD_WORKER"
+abrir_terminal "celery_beat"   "$CMD_BEAT"
 
 if command -v tmux >/dev/null 2>&1; then
     echo "Procesos levantados en sesión tmux 'peer-guard'."

@@ -1,0 +1,9 @@
+docker compose exec postgres psql -U peerguard -d peerguard
+
+\dt                         -- lista todas las tablas
+\d reports                  -- esquema detallado de la tabla reports
+SELECT COUNT(*) FROM reports;              -- cuántos reportes hay
+SELECT * FROM reports ORDER BY id DESC LIMIT 5;  -- los últimos 5
+\q                          -- salir de psql
+
+docker compose exec redis redis-cli -n 2 keys "heatmap:*"
