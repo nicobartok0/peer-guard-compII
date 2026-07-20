@@ -3,7 +3,7 @@ from celery import Celery
 from dotenv import load_dotenv
 from pathlib import Path
 from kombu import Queue
-
+from celery.schedules import crontab
 
 # Cargar .env correctamente
 env_path = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -24,13 +24,13 @@ celery_app = Celery(
 celery_app.conf.task_queues = (
     Queue("enriquecimiento"),
     Queue("persistencia"),
-    Queue("estadistica")
+    Queue("estadistica"),
 )
 
 celery_app.conf.task_routes = {
-    "server.tasks.enrichment.enriquecer": {"queue": "enriquecimiento"},
-    "server.tasks.persistence.persistir": {"queue": "persistencia"},
-    "server.tasks.statistics.calcular_estadistica": {"queue": "estadistica"},
+    "server.tasks.enrichment.enriquecer":          {"queue": "enriquecimiento"},
+    "server.tasks.persistence.persistir":           {"queue": "persistencia"},
+    "server.tasks.statistics.recalcular_heatmap":  {"queue": "estadistica"},
 }
 
 celery_app.conf.update(
@@ -49,9 +49,17 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
 
     result_expires=3600,
+
+    
+    beat_schedule={
+        "recalcular-heatmap-cada-5-minutos": {
+            "task":     "server.tasks.statistics.recalcular_heatmap",
+            "schedule": 300,  
+        },
+    },
 )
 
 celery_app.autodiscover_tasks(["server"])
 
-# Importe EXPLÍCITO de las tasks para que celery las detecte
-from server.tasks import enrichment, persistence
+# Importe EXPLÍCITO para que Celery detecte las tasks
+from server.tasks import enrichment, persistence, statistics

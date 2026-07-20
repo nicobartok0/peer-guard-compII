@@ -22,4 +22,5 @@ celerybeat.pid
 *.log
 
 # Misceláneos
-psql-comms
+psql-commscelerybeat-schedule
+celerybeat.pid
