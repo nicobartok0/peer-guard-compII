@@ -54,7 +54,7 @@ celery_app.conf.update(
     beat_schedule={
         "recalcular-heatmap-cada-5-minutos": {
             "task":     "server.tasks.statistics.recalcular_heatmap",
-            "schedule": 300,  
+            "schedule": 10,  
         },
     },
 )

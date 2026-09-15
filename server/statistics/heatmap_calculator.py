@@ -22,25 +22,12 @@ ZONA_SIN_BARRIO = "Sin barrio"
 class HeatmapCalculator:
 
     def calcular(self) -> None:
-        """
-        Recalcula el heatmap completo desde PostgreSQL y lo escribe en Redis estado.
-        Lee todos los reportes, agrupa por (barrio, franja_horaria), calcula el
-        promedio de severidad y el total de reportes, y persiste en Redis.
-        """
+        
         agregados = self._agregar_desde_db()
         self._escribir_en_redis(agregados)
 
     def _agregar_desde_db(self) -> dict:
-        """
-        Consulta PostgreSQL y devuelve un dict con la estructura:
-        {
-            "barrio": {
-                "franja_horaria": {"suma_severidad": X, "total": N},
-                ...
-            },
-            ...
-        }
-        """
+        
         query = text("""
             SELECT
                 COALESCE(barrio, :sin_barrio)  AS zona,
@@ -71,25 +58,11 @@ class HeatmapCalculator:
         return agregados
 
     def _escribir_en_redis(self, agregados: dict) -> None:
-        """
-        Escribe el heatmap calculado en Redis estado.
-        Cada zona es un hash con una key por franja horaria + una key 'total'.
-
-        Estructura en Redis:
-            heatmap:barrio:<zona>  →  {
-                "mañana":    2.3,
-                "tarde":     1.1,
-                "noche":     4.7,
-                "madrugada": 3.2,
-                "total":     87
-            }
-        """
         pipe = _redis.pipeline()
+        heatmap_completo = {}
 
         for zona, franjas in agregados.items():
             key = f"heatmap:barrio:{zona}"
-
-            # Calculamos intensidad (promedio de severidad) por franja
             datos = {}
             total_zona = 0
 
@@ -100,13 +73,17 @@ class HeatmapCalculator:
                     datos[franja] = intensidad
                     total_zona += d["total"]
                 else:
-                    # Franja sin reportes en esta zona → intensidad 0
                     datos[franja] = 0.0
 
             datos["total"] = total_zona
-
-            # Sobreescribimos el hash completo de esta zona
             pipe.delete(key)
             pipe.hset(key, mapping={k: json.dumps(v) for k, v in datos.items()})
 
+            # Acumulamos para el mensaje Pub/Sub
+            heatmap_completo[zona] = datos
+
         pipe.execute()
+
+        # Publicamos el heatmap completo en el canal para que
+        # el conn_manager lo broadcastee a los clientes conectados.
+        _redis.publish("heatmap_update", json.dumps(heatmap_completo))
